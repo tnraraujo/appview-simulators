@@ -1,0 +1,27 @@
+# Sistema operacional
+.DS_Store
+Thumbs.db
+
+# IDEs e editores
+.idea/
+.vscode/
+*.iml
+*.ipr
+*.iws
+
+# Java / Gradle
+**/.gradle/
+**/build/
+**/out/
+**/bin/
+!**/gradle/wrapper/gradle-wrapper.jar
+
+# Logs locais
+**/_logs/
+*.log
+*.log.*
+
+# Arquivos temporarios
+*.tmp
+*.swp
+
