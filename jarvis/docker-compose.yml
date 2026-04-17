@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  jarvis:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: jarvis
+    ports:
+      - "8081:8081"
+    environment:
+      - SPRING_PROFILES_ACTIVE=default
+      - SERVER_PORT=8081
+      # Você pode substituir propriedades como estas:
+      # - jarvis_DELAY_MS=5000
+    restart: unless-stopped

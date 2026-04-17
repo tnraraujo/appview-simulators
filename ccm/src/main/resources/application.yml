@@ -1,0 +1,32 @@
+server:
+  port: ${PORT:8083}
+
+spring:
+  application:
+    name: ccm
+  security:
+    user:
+      name: ${CCM_BASIC_AUTH_USER:appview}
+      password: ${CCM_BASIC_AUTH_PASS:appview-secret}
+
+simulador:
+  mode: ${SIM_MODE:success}
+  delay-ms: ${DEFAULT_DELAY_MS:100}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,prometheus,info
+  endpoint:
+    health:
+      show-details: always
+    prometheus:
+      access: UNRESTRICTED
+
+logging:
+  level:
+    root: INFO
+    com.zurich.santander: DEBUG
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSZ}","level":"%level","thread":"%thread","logger":"%logger","message":"%msg","trace_id":"%X{traceparent}"}%n'
