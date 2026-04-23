@@ -28,12 +28,24 @@ class JarvisControllerIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("Deve aceitar request valido e retornar 202")
-    void shouldAcceptValidRequest() throws Exception {
+    @DisplayName("Deve aceitar payload minimo documentado e retornar 202")
+    void shouldAcceptMinimalPayload() throws Exception {
         mockMvc.perform(post("/api/jarvis/cognitive-services/v1/documents-reading")
                         .header("Ocp-Apim-Subscription-Key", "test-key")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPayload(base64("pdf-content"))))
+                        .content(minimalPayload(base64("pdf-content"))))
+                .andExpect(status().isAccepted())
+                .andExpect(jsonPath("$.requestId").isNotEmpty())
+                .andExpect(jsonPath("$.status").value("PROCESSING"));
+    }
+
+    @Test
+    @DisplayName("Deve aceitar callbackUrl legado sem exigir uso")
+    void shouldAcceptLegacyCallbackUrl() throws Exception {
+        mockMvc.perform(post("/api/jarvis/cognitive-services/v1/documents-reading")
+                        .header("Ocp-Apim-Subscription-Key", "test-key")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(payloadWithLegacyCallback(base64("pdf-content"))))
                 .andExpect(status().isAccepted())
                 .andExpect(jsonPath("$.requestId").isNotEmpty())
                 .andExpect(jsonPath("$.status").value("PROCESSING"));
@@ -45,7 +57,7 @@ class JarvisControllerIntegrationTest {
         mockMvc.perform(post("/api/jarvis/cognitive-services/v1/documents-reading")
                         .header("Ocp-Apim-Subscription-Key", "wrong-key")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPayload(base64("pdf-content"))))
+                        .content(minimalPayload(base64("pdf-content"))))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("UNAUTHORIZED"));
     }
@@ -56,7 +68,7 @@ class JarvisControllerIntegrationTest {
         mockMvc.perform(post("/api/jarvis/cognitive-services/v1/documents-reading")
                         .header("Ocp-Apim-Subscription-Key", "test-key")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPayload("%%%invalid%%%")))
+                        .content(minimalPayload("%%%invalid%%%")))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
     }
@@ -70,21 +82,25 @@ class JarvisControllerIntegrationTest {
         mockMvc.perform(post("/api/jarvis/cognitive-services/v1/documents-reading")
                         .header("Ocp-Apim-Subscription-Key", "test-key")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(validPayload(oversized)))
+                        .content(minimalPayload(oversized)))
                 .andExpect(status().isPayloadTooLarge())
                 .andExpect(jsonPath("$.code").value("PAYLOAD_TOO_LARGE"));
     }
 
-    private String validPayload(String base64) {
+    private String minimalPayload(String base64) {
         return """
                 {
                   "documentCode": "alfresco-document-id",
-                  "documentIndex": 1,
-                  "sequential": "001",
-                  "channel": "WPC",
-                  "channelId": "WPC-001",
-                  "holderName": "Joao da Silva",
-                  "origin": "ECM",
+                  "claimId": "SIN123456",
+                  "documentBase64": "%s"
+                }
+                """.formatted(base64);
+    }
+
+    private String payloadWithLegacyCallback(String base64) {
+        return """
+                {
+                  "documentCode": "alfresco-document-id",
                   "claimId": "SIN123456",
                   "callbackUrl": "http://localhost:9999/api/jarvis/callback",
                   "documentBase64": "%s",

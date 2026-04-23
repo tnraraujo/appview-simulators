@@ -45,6 +45,7 @@ class JarvisCallbackSchedulerTest {
         properties = new JarvisProperties();
         properties.setMaxRetries(1);
         properties.setRetryBackoffMs(10);
+        properties.setFixedCallbackUrl("http://localhost:8080/api/jarvis/callback");
         WebhookSignatureService webhookSignatureService = new WebhookSignatureService(properties);
         scheduler = new JarvisCallbackScheduler(repository, restTemplate, properties, metricsService, webhookSignatureService, createObjectMapper());
     }
@@ -57,7 +58,7 @@ class JarvisCallbackSchedulerTest {
         scheduler.processPendingRequests();
 
         assertEquals(DocumentProcessingStatus.COMPLETED, request.getStatus());
-        verify(restTemplate).postForEntity(eq(request.getCallbackUrl()), argThat((HttpEntity<String> httpEntity) -> {
+        verify(restTemplate).postForEntity(eq(properties.getFixedCallbackUrl()), argThat((HttpEntity<String> httpEntity) -> {
             String signature = httpEntity.getHeaders().getFirst(properties.getWebhookSignatureHeader());
             String timestamp = httpEntity.getHeaders().getFirst(properties.getWebhookTimestampHeader());
             String idempotency = httpEntity.getHeaders().getFirst(properties.getWebhookIdempotencyHeader());
@@ -79,7 +80,7 @@ class JarvisCallbackSchedulerTest {
 
         scheduler.processPendingRequests();
 
-        verify(restTemplate).postForEntity(eq(request.getCallbackUrl()), argThat((HttpEntity<String> httpEntity) ->
+        verify(restTemplate).postForEntity(eq(properties.getFixedCallbackUrl()), argThat((HttpEntity<String> httpEntity) ->
                 !httpEntity.getHeaders().containsKey(properties.getWebhookSignatureHeader())), eq(String.class));
     }
 
@@ -87,7 +88,7 @@ class JarvisCallbackSchedulerTest {
     void shouldScheduleRetryOnFirstFailure() {
         DocumentRequest request = baseRequest();
         when(repository.findByStatusInAndNextAttemptAtLessThanEqual(any(), any())).thenReturn(List.of(request));
-        doThrow(new RuntimeException("boom")).when(restTemplate).postForEntity(eq(request.getCallbackUrl()), any(), eq(String.class));
+        doThrow(new RuntimeException("boom")).when(restTemplate).postForEntity(eq(properties.getFixedCallbackUrl()), any(), eq(String.class));
 
         scheduler.processPendingRequests();
 
@@ -103,7 +104,7 @@ class JarvisCallbackSchedulerTest {
         request.setCallbackAttempts(1);
         request.setStatus(DocumentProcessingStatus.RETRY_PENDING);
         when(repository.findByStatusInAndNextAttemptAtLessThanEqual(any(), any())).thenReturn(List.of(request));
-        doThrow(new RuntimeException("boom")).when(restTemplate).postForEntity(eq(request.getCallbackUrl()), any(), eq(String.class));
+        doThrow(new RuntimeException("boom")).when(restTemplate).postForEntity(eq(properties.getFixedCallbackUrl()), any(), eq(String.class));
 
         scheduler.processPendingRequests();
 
@@ -117,7 +118,6 @@ class JarvisCallbackSchedulerTest {
         request.setDocumentCode("doc-1");
         request.setClaimId("SIN123");
         request.setDocumentType("RG");
-        request.setCallbackUrl("http://localhost/callback");
         request.setStatus(DocumentProcessingStatus.PENDING);
         request.setCreatedAt(LocalDateTime.now().minusSeconds(1));
         request.setNextAttemptAt(LocalDateTime.now());

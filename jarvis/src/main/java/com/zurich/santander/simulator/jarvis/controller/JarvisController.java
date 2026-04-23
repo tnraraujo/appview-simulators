@@ -13,6 +13,7 @@ import com.zurich.santander.simulator.jarvis.service.PayloadValidationService;
 import com.zurich.santander.simulator.jarvis.service.RateLimitService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -25,6 +26,7 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/jarvis/cognitive-services/v1")
 @RequiredArgsConstructor
+@Slf4j
 public class JarvisController {
 
     private final DocumentRequestRepository repository;
@@ -57,17 +59,28 @@ public class JarvisController {
 
         payloadValidationService.validate(payload);
 
+        if (payload.callbackUrl() != null && !payload.callbackUrl().isBlank()) {
+            log.warn("Ignoring deprecated callbackUrl from request for documentCode={}", payload.documentCode());
+            metricsService.incrementLegacyCallbackUrlIgnored();
+        }
+
+        String fixedCallbackUrl = properties.getFixedCallbackUrl();
+        if (fixedCallbackUrl == null || fixedCallbackUrl.isBlank()) {
+            throw new ApiException(HttpStatus.INTERNAL_SERVER_ERROR, "CONFIGURATION_ERROR", "Fixed callback URL is not configured");
+        }
+
         String requestId = UUID.randomUUID().toString();
+        LocalDateTime now = LocalDateTime.now();
 
         DocumentRequest request = new DocumentRequest();
         request.setRequestId(requestId);
         request.setDocumentCode(payload.documentCode());
         request.setClaimId(payload.claimId());
         request.setDocumentType(payload.documentType());
-        request.setCallbackUrl(payload.callbackUrl());
         request.setStatus(DocumentProcessingStatus.PENDING);
         request.setCallbackAttempts(0);
-        request.setNextAttemptAt(LocalDateTime.now());
+        request.setCreatedAt(now);
+        request.setNextAttemptAt(now);
         repository.save(request);
 
         metricsService.incrementRequestAccepted();

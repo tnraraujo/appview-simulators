@@ -52,11 +52,14 @@ public class JarvisCallbackScheduler {
             long duration = java.time.Duration.between(request.getCreatedAt(), LocalDateTime.now()).toMillis();
 
             try {
-                if (request.getCallbackUrl() != null) {
-                    HttpEntity<String> callbackRequest = buildCallbackRequest(request.getCallbackUrl(), request.getRequestId(), payload);
-                    restTemplate.postForEntity(request.getCallbackUrl(), callbackRequest, String.class);
-                    log.info("Callback sent to {}", request.getCallbackUrl());
+                String callbackUrl = properties.getFixedCallbackUrl();
+                if (callbackUrl == null || callbackUrl.isBlank()) {
+                    throw new IllegalStateException("Fixed callback URL is not configured");
                 }
+
+                HttpEntity<String> callbackRequest = buildCallbackRequest(callbackUrl, request.getRequestId(), payload);
+                restTemplate.postForEntity(callbackUrl, callbackRequest, String.class);
+                log.info("Callback sent to {}", callbackUrl);
 
                 request.setStatus(DocumentProcessingStatus.COMPLETED);
                 request.setProcessedAt(LocalDateTime.now());

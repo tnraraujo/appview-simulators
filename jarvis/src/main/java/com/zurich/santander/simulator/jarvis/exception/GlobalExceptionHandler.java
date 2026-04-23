@@ -3,6 +3,7 @@ package com.zurich.santander.simulator.jarvis.exception;
 import jakarta.validation.ConstraintViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -14,12 +15,20 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     public ResponseEntity<ApiErrorResponse> handleApiException(ApiException ex) {
-        return ResponseEntity.status(ex.getStatus()).body(new ApiErrorResponse(
+        ApiErrorResponse body = new ApiErrorResponse(
                 OffsetDateTime.now(),
                 ex.getStatus().value(),
                 ex.getCode(),
                 ex.getMessage()
-        ));
+        );
+
+        if (ex.getStatus() == HttpStatus.TOO_MANY_REQUESTS) {
+            return ResponseEntity.status(ex.getStatus())
+                    .header(HttpHeaders.RETRY_AFTER, "60")
+                    .body(body);
+        }
+
+        return ResponseEntity.status(ex.getStatus()).body(body);
     }
 
     @ExceptionHandler({MethodArgumentNotValidException.class, ConstraintViolationException.class})

@@ -21,6 +21,8 @@ import java.util.Map;
 @Slf4j
 public class PegaBpmController {
 
+    private static final int MIN_LEGIBILIDADE_RN020 = 60;
+
     private final SimulationService simulationService;
     private final Map<String, CriarCasoRequest> createdCases = new ConcurrentHashMap<>();
 
@@ -53,6 +55,8 @@ public class PegaBpmController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
 
+        validarLegibilidadeMinima(request.getOcrScores().getLegibilidade(), "criação de caso");
+
         String caseId = "PEGA-CASE-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         createdCases.put(caseId, request);
 
@@ -73,7 +77,7 @@ public class PegaBpmController {
             @PathVariable String caseId,
             @RequestHeader(value = "X-Simulate-Error", required = false) String simulateError,
             @RequestHeader(value = "X-Simulate-Delay", required = false) String simulateDelay,
-            @RequestBody AtualizarDocumentoRequest request) {
+            @Valid @RequestBody AtualizarDocumentoRequest request) {
 
         log.info("Recebida requisição para atualizar documentos do caso: {}", caseId);
         simulationService.processSimulationHeaders(simulateError, simulateDelay);
@@ -81,6 +85,8 @@ public class PegaBpmController {
         if (!createdCases.containsKey(caseId) && !"200".equals(simulateError)) { // Allow 200 override for testing
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
+
+        validarLegibilidadeMinima(request.getOcrScores().getLegibilidade(), "atualização de documento");
 
         DocumentoAtualizadoResponse response = new DocumentoAtualizadoResponse();
         response.setCaseId(caseId);
@@ -124,5 +130,14 @@ public class PegaBpmController {
 
         log.info("Consulta do caso {}, status: {}", caseId, response.getStatus());
         return ResponseEntity.ok(response);
+    }
+
+    private void validarLegibilidadeMinima(Integer legibilidade, String contexto) {
+        if (legibilidade < MIN_LEGIBILIDADE_RN020) {
+            throw new org.springframework.web.server.ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "RN-020 violada: legibilidade mínima para " + contexto + " é " + MIN_LEGIBILIDADE_RN020
+            );
+        }
     }
 }

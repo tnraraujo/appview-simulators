@@ -11,6 +11,7 @@ public class JarvisProperties {
     private long maxPayloadBytes = 10 * 1024 * 1024;
     private String apiKey = "jarvis-dev-key";
     private int rateLimitPerMinute = 50;
+    private String fixedCallbackUrl = "http://localhost:8080/api/jarvis/callback";
     private boolean webhookSignatureEnabled = true;
     private String webhookSecret = "jarvis-webhook-secret";
     private long webhookReplayWindowSeconds = 300;
@@ -65,6 +66,14 @@ public class JarvisProperties {
 
     public void setRateLimitPerMinute(int rateLimitPerMinute) {
         this.rateLimitPerMinute = rateLimitPerMinute;
+    }
+
+    public String getFixedCallbackUrl() {
+        return fixedCallbackUrl;
+    }
+
+    public void setFixedCallbackUrl(String fixedCallbackUrl) {
+        this.fixedCallbackUrl = fixedCallbackUrl;
     }
 
     public boolean isWebhookSignatureEnabled() {

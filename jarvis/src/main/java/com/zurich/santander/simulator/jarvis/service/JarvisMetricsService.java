@@ -31,6 +31,12 @@ public class JarvisMetricsService {
                 .increment();
     }
 
+    public void incrementLegacyCallbackUrlIgnored() {
+        Counter.builder("jarvis_legacy_callback_url_ignored_total")
+                .register(meterRegistry)
+                .increment();
+    }
+
     public void incrementCallbackSent() {
         Counter.builder("jarvis_callback_total")
                 .tag("result", "success")

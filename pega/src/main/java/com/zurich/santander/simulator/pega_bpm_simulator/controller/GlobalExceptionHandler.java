@@ -5,6 +5,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.server.ResponseStatusException;
 import io.github.resilience4j.ratelimiter.RequestNotPermitted;
 
 import java.time.OffsetDateTime;
@@ -40,5 +41,17 @@ public class GlobalExceptionHandler {
         response.put("message", "Rate limit exceeded (100 req/min). Please slow down or rely on fallback queues.");
 
         return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).body(response);
+    }
+
+    @ExceptionHandler(ResponseStatusException.class)
+    public ResponseEntity<Map<String, Object>> handleResponseStatusException(ResponseStatusException ex) {
+        Map<String, Object> response = new HashMap<>();
+        HttpStatus status = HttpStatus.valueOf(ex.getStatusCode().value());
+        response.put("timestamp", OffsetDateTime.now().format(DateTimeFormatter.ISO_OFFSET_DATE_TIME));
+        response.put("status", status.value());
+        response.put("error", status.getReasonPhrase());
+        response.put("message", ex.getReason() != null ? ex.getReason() : "Erro de negócio na integração Pega");
+
+        return ResponseEntity.status(status).body(response);
     }
 }

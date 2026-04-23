@@ -2,6 +2,8 @@ package com.zurich.santander.simulator.pega_bpm_simulator.dto;
 
 import lombok.Data;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.Map;
@@ -23,7 +25,12 @@ public class CriarCasoRequest {
     private LossInfo lossInfo;
 
     @Valid
+    @NotNull(message = "DocumentoAlfresco é obrigatório")
     private DocumentoAlfresco documentoAlfresco;
+
+    @Valid
+    @NotNull(message = "OCR scores são obrigatórios")
+    private OcrScores ocrScores;
 
     private Map<String, Object> metadata;
 
@@ -41,5 +48,23 @@ public class CriarCasoRequest {
         @NotBlank(message = "DocumentId é obrigatório")
         private String documentId;
         private String documentPath;
+    }
+
+    @Data
+    public static class OcrScores {
+        @NotNull(message = "Legibilidade é obrigatória")
+        @Min(value = 0, message = "Legibilidade mínima é 0")
+        @Max(value = 100, message = "Legibilidade máxima é 100")
+        private Integer legibilidade;
+
+        @NotNull(message = "Acuracidade é obrigatória")
+        @Min(value = 0, message = "Acuracidade mínima é 0")
+        @Max(value = 100, message = "Acuracidade máxima é 100")
+        private Integer acuracidade;
+
+        @NotNull(message = "MatchDocumento é obrigatório")
+        @Min(value = 0, message = "MatchDocumento mínimo é 0")
+        @Max(value = 100, message = "MatchDocumento máximo é 100")
+        private Integer matchDocumento;
     }
 }
